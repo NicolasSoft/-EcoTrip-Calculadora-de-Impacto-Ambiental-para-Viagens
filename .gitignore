@@ -1,0 +1,19 @@
+# Dependências (se futuramente usar npm)
+node_modules/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Configurações do VSCode
+.vscode/
+
+# Logs
+*.log
+
+# Cache
+.cache/
+
+# Build (se usar bundlers no futuro)
+dist/
+build/
