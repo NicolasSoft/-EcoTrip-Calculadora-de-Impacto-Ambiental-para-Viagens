@@ -1,0 +1,1455 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EcoTrip — Calculadora Inteligente de Emissões</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+    <!-- Favicon e Logos para diferentes dispositivos -->
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png">
+  <link rel="manifest" href="assets/favicon/site.webmanifest">
+  <link rel="mask-icon" href="assets/favicon/safari-pinned-tab.svg" color="#10b981">
+  <meta name="msapplication-TileColor" content="#0f1720">
+  <meta name="theme-color" content="#0f1720">
+  <!-- Leaflet para mapas -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    /* Estilos inline para evitar problemas de carregamento */
+    .leaflet-container { z-index: 1; }
+  </style>
+</head>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1720;
+    --card: #0b1220;
+    --card-secondary: #101a2a;
+    --muted: #94a3b8;
+    --accent: #10b981;
+    --accent-secondary: #0d9668;
+    --glass: rgba(255, 255, 255, 0.05);
+    --text: #e6eef3;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --radius: 12px;
+    --shadow: 0 10px 40px rgba(2, 6, 23, 0.6);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Mobile First */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    height: 100%;
+    font-size: 14px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #071223 0%, #0a1a2a 100%);
+    color: var(--text);
+    padding: 1rem;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  .container {
+    max-width: 100%;
+    margin: 0 auto;
+    background: linear-gradient(180deg, var(--card), #07111a);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, var(--accent), #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    margin: 0.5rem 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 400;
+  }
+
+  /* Navigation Tabs */
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.75rem 1rem;
+    background: var(--glass);
+    border: none;
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: #022;
+    font-weight: 600;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card-secondary);
+    padding: 1.25rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .card h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card h2 i {
+    color: var(--accent);
+  }
+
+  /* Form */
+  .form-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .label-help {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1rem;
+    transition: var(--transition);
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+  }
+
+  .checkbox-group input {
+    width: auto;
+    transform: scale(1.2);
+  }
+
+  .row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .row > * {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  /* Map */
+  #map {
+    height: 300px;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .map-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .map-controls button {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--glass);
+    color: var(--text);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.85rem;
+  }
+
+  .map-controls button:hover {
+    border-color: var(--accent);
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+    color: #022;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+  }
+
+  .btn-secondary {
+    background: var(--glass);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Results */
+  .result-display {
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border-radius: var(--radius);
+    margin: 1rem 0;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .result-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0.5rem 0;
+  }
+
+  .result-equivalent {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Charts */
+  .chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+    margin: 1.5rem 0;
+  }
+
+  /* History */
+  .history-list {
+    list-style: none;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    padding: 0.875rem 1rem;
+    margin-bottom: 0.75rem;
+    background: var(--glass);
+    border-radius: 8px;
+    border-left: 4px solid var(--accent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .history-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .history-transport {
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .history-emission {
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .history-date {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .history-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .history-actions button {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+
+  /* AI Insight */
+  .ai-insight {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .ai-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ai-content {
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .ai-loading {
+    color: var(--muted);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Ranking */
+  .ranking-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .ranking-item {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: var(--glass);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--transition);
+  }
+
+  .ranking-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .ranking-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--accent);
+    color: #022;
+    min-width: 30px;
+    text-align: center;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--glass);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* Loading State */
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--accent);
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Utility Classes */
+  .hidden {
+    display: none !important;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .mt-1 { margin-top: 0.5rem; }
+  .mt-2 { margin-top: 1rem; }
+  .mt-3 { margin-top: 1.5rem; }
+  .mb-1 { margin-bottom: 0.5rem; }
+  .mb-2 { margin-bottom: 1rem; }
+  .mb-3 { margin-bottom: 1.5rem; }
+
+  /* Responsive */
+  @media (min-width: 640px) {
+    html, body {
+      font-size: 16px;
+    }
+    
+    .container {
+      max-width: 640px;
+      padding: 1.5rem;
+    }
+    
+    .chart-container {
+      height: 300px;
+    }
+    
+    #map {
+      height: 350px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    body {
+      padding: 2rem;
+    }
+    
+    .container {
+      max-width: 768px;
+      padding: 2rem;
+    }
+    
+    .form-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      max-width: 1024px;
+    }
+    
+    .form-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .chart-container {
+      height: 350px;
+    }
+  }
+</style>
+
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>🌱 EcoTrip</h1>
+      <p class="subtitle">Calculadora Inteligente de Emissões de CO₂ com IA, Mapas e Histórico</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="calculator">📊 Calculadora</button>
+      <button class="tab" data-tab="history">📅 Histórico</button>
+      <button class="tab" data-tab="insights">📈 Insights</button>
+      <button class="tab" data-tab="ranking">🏆 Ranking</button>
+    </div>
+
+    <!-- Calculator Tab -->
+    <div id="calculator" class="tab-content active">
+      <div class="card">
+        <h2>📍 Mapa de Rotas</h2>
+        <div id="map"></div>
+        <div class="map-controls">
+          <button id="clear-route">🗑️ Limpar Rota</button>
+          <button id="use-distance">📏 Usar Distância</button>
+          <div style="flex: 1; text-align: right;">
+            <span id="map-distance-info" style="color: var(--accent); font-weight: 500;">0 km</span>
+          </div>
+        </div>
+      </div>
+
+      <form id="trip-form" class="card" autocomplete="off">
+        <h2>🚗 Simule sua Viagem</h2>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Modo de Transporte</label>
+            <select id="transport" name="transport" required>
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Distância (km)</label>
+            <input type="number" id="distance" name="distance" min="0" step="0.1" placeholder="Ex.: 120" required>
+            <span class="label-help">Ou use o mapa acima para calcular</span>
+          </div>
+          
+          <div class="form-group">
+            <label>Eficiência</label>
+            <select id="fuel" name="fuel">
+              <option value="default">Padrão (média)</option>
+              <option value="gasoline">Gasolina</option>
+              <option value="diesel">Diesel</option>
+              <option value="electric">Elétrico</option>
+              <option value="hybrid">Híbrido</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="row">
+          <div class="checkbox-group">
+            <input type="checkbox" id="roundtrip" name="roundtrip">
+            <label for="roundtrip">Ida e Volta</label>
+          </div>
+          
+          <div class="form-group" style="flex: 1;">
+            <label>Passageiros</label>
+            <input type="number" id="passengers" name="passengers" min="1" value="1" step="1">
+          </div>
+          
+          <div class="form-group" style="flex: 1;">
+            <label>Frequência/mês</label>
+            <input type="number" id="frequency" name="frequency" min="1" value="1" step="1">
+          </div>
+        </div>
+        
+        <div class="text-center mt-2">
+          <button type="submit" class="btn btn-primary">
+            📊 Calcular Emissões
+          </button>
+        </div>
+      </form>
+      
+      <div id="calculator-result"></div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="history" class="tab-content hidden">
+      <div class="card">
+        <h2>📅 Histórico de Cálculos</h2>
+        <div class="history-list" id="historyList">
+          <!-- Histórico será carregado aqui -->
+        </div>
+        <div class="text-center mt-2">
+          <button id="clear-history" class="btn btn-secondary">Limpar Histórico</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Insights Tab -->
+    <div id="insights" class="tab-content hidden">
+      <div class="card">
+        <h2>📈 Comparação de Transportes</h2>
+        <div class="chart-container">
+          <canvas id="co2Chart"></canvas>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>📊 Evolução por Distância</h2>
+        <div class="chart-container">
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+      
+      <div class="ai-insight">
+        <div class="ai-header">
+          <span>🤖</span>
+          <h3 style="margin: 0;">Análise Inteligente</h3>
+        </div>
+        <div id="aiInsight" class="ai-content">
+          <p class="ai-loading">Clique em "Calcular Emissões" para gerar uma análise...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ranking Tab -->
+    <div id="ranking" class="tab-content hidden">
+      <div class="card">
+        <h2>🏆 Ranking de Sustentabilidade</h2>
+        <ul id="rankingList" class="ranking-list">
+          <!-- Ranking será carregado aqui -->
+        </ul>
+      </div>
+      
+      <div class="card">
+        <h2>🌳 Compensação Ambiental</h2>
+        <div id="compensation" class="result-display">
+          <p>Suas emissões equivalem a:</p>
+          <div class="row" style="justify-content: center; gap: 2rem; margin: 1.5rem 0;">
+            <div class="text-center">
+              <div class="result-value" style="color: var(--accent);" id="trees-count">0</div>
+              <p class="result-equivalent">árvores para compensar</p>
+            </div>
+            <div class="text-center">
+              <div class="result-value" style="color: var(--warning);" id="solar-count">0</div>
+              <p class="result-equivalent">kWh de energia solar</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>🌍 EcoTrip v2.0 | Projeto Educacional DIO | Dados para fins didáticos</p>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        <button id="export-data" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
+          📥 Exportar Dados
+        </button>
+        <button id="reset-all" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-left: 0.5rem;">
+          🔄 Resetar
+        </button>
+      </p>
+    </footer>
+  </main>
+
+  <!-- Bibliotecas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // ========== CONFIGURAÇÃO INICIAL ==========
+    const ECO_DATA = {
+      modes: {
+        car: { label: "🚗 Carro (gasolina)", factor: 0.192 },
+        car_diesel: { label: "🚗 Carro (diesel)", factor: 0.171 },
+        car_electric: { label: "⚡ Carro (elétrico)", factor: 0.053 },
+        car_hybrid: { label: "🔋 Carro (híbrido)", factor: 0.105 },
+        bus: { label: "🚌 Ônibus", factor: 0.105 },
+        train: { label: "🚆 Trem/Metrô", factor: 0.041 },
+        motorcycle: { label: "🏍️ Moto", factor: 0.103 },
+        plane_short: { label: "✈️ Avião (curta)", factor: 0.255 },
+        plane_long: { label: "✈️ Avião (longa)", factor: 0.158 },
+        bicycle: { label: "🚲 Bicicleta", factor: 0.0 },
+        walking: { label: "🚶 A pé", factor: 0.0 },
+        ev_scooter: { label: "🛴 Patinete Elétrico", factor: 0.03 }
+      },
+      fuelFactors: {
+        default: 1.0,
+        gasoline: 1.2,
+        diesel: 0.9,
+        electric: 0.3,
+        hybrid: 0.6
+      }
+    };
+
+    const CONFIG = {
+      precision: 2,
+      co2PerTree: 21,
+      solarPerKwh: 0.4,
+      historyLimit: 20
+    };
+
+    // ========== ESTADO DA APLICAÇÃO ==========
+    let state = {
+      currentEmission: 0,
+      history: [],
+      map: null,
+      markers: [],
+      charts: {
+        bar: null,
+        line: null
+      },
+      mapDistance: 0
+    };
+
+    // ========== LOCAL STORAGE ==========
+    class StorageManager {
+      static KEY = 'ecotrip_history';
+      
+      static saveHistory(history) {
+        try {
+          localStorage.setItem(this.KEY, JSON.stringify(history));
+          return true;
+        } catch (e) {
+          console.error('Erro ao salvar:', e);
+          return false;
+        }
+      }
+      
+      static loadHistory() {
+        try {
+          const data = localStorage.getItem(this.KEY);
+          return data ? JSON.parse(data) : [];
+        } catch (e) {
+          console.error('Erro ao carregar:', e);
+          return [];
+        }
+      }
+      
+      static clearHistory() {
+        localStorage.removeItem(this.KEY);
+      }
+      
+      static saveConfig(key, value) {
+        localStorage.setItem(`ecotrip_${key}`, value);
+      }
+      
+      static loadConfig(key) {
+        return localStorage.getItem(`ecotrip_${key}`);
+      }
+    }
+
+    // ========== CALCULADORA ==========
+    class Calculator {
+      static kmToKgCO2(distance, modeKey, passengers = 1, roundtrip = false, fuelType = 'default', frequency = 1) {
+        const mode = ECO_DATA.modes[modeKey];
+        if (!mode) return 0;
+        
+        const fuelFactor = ECO_DATA.fuelFactors[fuelType] || 1.0;
+        const legs = roundtrip ? 2 : 1;
+        const totalDistance = distance * legs * frequency;
+        const totalKg = totalDistance * mode.factor * fuelFactor;
+        
+        return totalKg / Math.max(1, passengers);
+      }
+      
+      static formatKg(value) {
+        return `${Number(value).toFixed(CONFIG.precision)} kg CO₂`;
+      }
+      
+      static toTrees(co2Kg) {
+        return (co2Kg / CONFIG.co2PerTree).toFixed(1);
+      }
+      
+      static toSolarKwh(co2Kg) {
+        return (co2Kg / CONFIG.solarPerKwh).toFixed(1);
+      }
+    }
+
+    // ========== MAPA ==========
+    class MapManager {
+      static init() {
+        if (state.map) return;
+        
+        // Criar mapa
+        state.map = L.map('map').setView([-23.550, -46.633], 12);
+        
+        // Adicionar tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 18
+        }).addTo(state.map);
+        
+        // Adicionar evento de clique
+        state.map.on('click', (e) => {
+          this.handleMapClick(e);
+        });
+        
+        // Adicionar marcador inicial
+        const marker = L.marker([-23.550, -46.633]).addTo(state.map);
+        marker.bindPopup("<b>Ponto de partida</b><br>Clique para adicionar destino").openPopup();
+        state.markers.push(marker);
+      }
+      
+      static handleMapClick(e) {
+        if (state.markers.length >= 2) {
+          state.markers.forEach(marker => state.map.removeLayer(marker));
+          state.markers = [];
+        }
+        
+        const marker = L.marker(e.latlng).addTo(state.map);
+        state.markers.push(marker);
+        
+        if (state.markers.length === 2) {
+          this.calculateDistance();
+        }
+        
+        document.getElementById('map-distance-info').textContent = 
+          state.markers.length === 2 ? 'Calculando...' : `${state.markers.length}/2 pontos`;
+      }
+      
+      static calculateDistance() {
+        if (state.markers.length !== 2) return;
+        
+        const point1 = state.markers[0].getLatLng();
+        const point2 = state.markers[1].getLatLng();
+        
+        // Cálculo simples da distância (fórmula de Haversine simplificada)
+        const R = 6371; // Raio da Terra em km
+        const dLat = (point2.lat - point1.lat) * Math.PI / 180;
+        const dLon = (point2.lng - point1.lng) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(point1.lat * Math.PI / 180) * Math.cos(point2.lat * Math.PI / 180) * 
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        state.mapDistance = parseFloat(distance.toFixed(1));
+        document.getElementById('map-distance-info').textContent = `${state.mapDistance} km`;
+        document.getElementById('distance').value = state.mapDistance;
+        
+        // Desenhar linha entre os pontos
+        if (window.routeLine) {
+          state.map.removeLayer(window.routeLine);
+        }
+        
+        window.routeLine = L.polyline([point1, point2], {
+          color: '#10b981',
+          weight: 3,
+          opacity: 0.7,
+          dashArray: '10, 10'
+        }).addTo(state.map);
+      }
+      
+      static clearRoute() {
+        if (window.routeLine) {
+          state.map.removeLayer(window.routeLine);
+          window.routeLine = null;
+        }
+        
+        state.markers.forEach(marker => state.map.removeLayer(marker));
+        state.markers = [];
+        state.mapDistance = 0;
+        document.getElementById('map-distance-info').textContent = '0 km';
+        document.getElementById('distance').value = '';
+      }
+    }
+
+    // ========== GRÁFICOS ==========
+    class ChartManager {
+      static initBarChart(ctx, labels, data, currentMode) {
+        if (state.charts.bar) {
+          state.charts.bar.destroy();
+        }
+        
+        const colors = labels.map((_, i) => {
+          const modeKey = Object.keys(ECO_DATA.modes)[i];
+          const mode = ECO_DATA.modes[modeKey];
+          // Destacar o modo atual
+          if (mode.label.includes(currentMode.split('(')[0].trim())) {
+            return '#10b981';
+          }
+          return i % 2 === 0 ? 'rgba(59, 130, 246, 0.7)' : 'rgba(139, 92, 246, 0.7)';
+        });
+        
+        state.charts.bar = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels.map(label => {
+              // Encurtar labels muito longos
+              if (label.length > 15) return label.substring(0, 12) + '...';
+              return label;
+            }),
+            datasets: [{
+              label: 'kg CO₂',
+              data: data,
+              backgroundColor: colors,
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+              borderWidth: 1,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `${context.parsed.y.toFixed(2)} kg CO₂`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                ticks: { color: '#94a3b8' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { 
+                  color: '#94a3b8',
+                  maxRotation: 45,
+                  minRotation: 45
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      static initLineChart(ctx, distances, emissions) {
+        if (state.charts.line) {
+          state.charts.line.destroy();
+        }
+        
+        state.charts.line = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: distances.map(d => `${d} km`),
+            datasets: [{
+              label: 'Emissões de CO₂',
+              data: emissions,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: '#10b981',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { 
+                display: true,
+                labels: { color: '#94a3b8' }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                ticks: { 
+                  color: '#94a3b8',
+                  callback: value => `${value} kg`
+                }
+              },
+              x: {
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                ticks: { color: '#94a3b8' }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // ========== IA (OpenAI ou simulada) ==========
+    class AIService {
+      static async generateInsight(emissionData) {
+        const aiElement = document.getElementById('aiInsight');
+        aiElement.innerHTML = '<div class="ai-loading"><span class="loading"></span> Gerando análise inteligente...</div>';
+        
+        // Usar respostas pré-definidas (pode ser substituído por OpenAI real)
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
+        
+        const emission = emissionData.emission;
+        const transport = emissionData.transport;
+        
+        let insight = '';
+        
+        if (emission < 5) {
+          insight = `🌱 <strong>Excelente escolha!</strong> Usar ${transport} resulta em apenas ${emissionData.emission} kg de CO₂. Continue assim! Você está contribuindo significativamente para um planeta mais limpo.`;
+        } else if (emission < 20) {
+          insight = `📊 <strong>Bom resultado!</strong> Com ${emissionData.emission} kg de CO₂, sua viagem tem impacto moderado. Dica: considerar carona solidária poderia reduzir ainda mais suas emissões.`;
+        } else if (emission < 50) {
+          insight = `⚠️ <strong>Impacto moderado-alto.</strong> ${emissionData.emission} kg de CO₂ é considerável. Sugestões: 1) Use transporte público 1-2 vezes por semana 2) Otimize rotas 3) Considere veículos mais eficientes.`;
+        } else {
+          insight = `🔥 <strong>Alto impacto ambiental.</strong> ${emissionData.emission} kg de CO₂ é significativo. Recomendações urgentes: 1) Migre para transporte público 2) Avalie carros elétricos/híbridos 3) Compense plantando ${Calculator.toTrees(emission)} árvores.`;
+        }
+        
+        // Adicionar análise contextual
+        insight += `<br><br><small>💡 Dica: Cada árvore plantada compensa ~${CONFIG.co2PerTree} kg CO₂/ano. Sua viagem requer ${Calculator.toTrees(emission)} árvores para compensação anual.</small>`;
+        
+        aiElement.innerHTML = `<p>${insight}</p>`;
+      }
+    }
+
+    // ========== INTERFACE ==========
+    class UI {
+      static init() {
+        // Preencher select de transportes
+        const transportSelect = document.getElementById('transport');
+        Object.keys(ECO_DATA.modes).forEach(key => {
+          const mode = ECO_DATA.modes[key];
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = mode.label;
+          transportSelect.appendChild(option);
+        });
+        
+        // Configurar tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            const tabId = tab.dataset.tab;
+            UI.switchTab(tabId);
+          });
+        });
+        
+        // Configurar formulário
+        document.getElementById('trip-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          UI.handleSubmit();
+        });
+        
+        // Configurar botões do mapa
+        document.getElementById('clear-route').addEventListener('click', MapManager.clearRoute);
+        document.getElementById('use-distance').addEventListener('click', () => {
+          if (state.mapDistance > 0) {
+            document.getElementById('distance').value = state.mapDistance;
+            alert(`Distância de ${state.mapDistance} km definida!`);
+          } else {
+            alert('Primeiro defina dois pontos no mapa.');
+          }
+        });
+        
+        // Configurar botões de ação
+        document.getElementById('clear-history').addEventListener('click', UI.clearHistory);
+        document.getElementById('export-data').addEventListener('click', UI.exportData);
+        document.getElementById('reset-all').addEventListener('click', UI.resetAll);
+        
+        // Carregar histórico
+        state.history = StorageManager.loadHistory();
+        UI.renderHistory();
+        
+        // Inicializar mapa
+        MapManager.init();
+        
+        // Inicializar com dados de exemplo
+        setTimeout(() => {
+          if (state.history.length === 0) {
+            UI.showWelcomeMessage();
+          }
+        }, 500);
+      }
+      
+      static showWelcomeMessage() {
+        const aiElement = document.getElementById('aiInsight');
+        aiElement.innerHTML = `
+          <p>👋 <strong>Bem-vindo ao EcoTrip!</strong></p>
+          <p>Simule viagens para calcular emissões de CO₂ e receba insights inteligentes sobre como reduzir seu impacto ambiental.</p>
+          <p><small>💡 Comece selecionando um transporte e uma distância na aba "Calculadora".</small></p>
+        `;
+      }
+      
+      static switchTab(tabId) {
+        // Atualizar tabs ativas
+        document.querySelectorAll('.tab').forEach(t => {
+          t.classList.toggle('active', t.dataset.tab === tabId);
+        });
+        
+        // Mostrar conteúdo da tab
+        document.querySelectorAll('.tab-content').forEach(c => {
+          c.classList.toggle('hidden', c.id !== tabId);
+        });
+        
+        // Redimensionar gráficos se necessário
+        if (tabId === 'insights') {
+          setTimeout(() => {
+            if (state.charts.bar) state.charts.bar.resize();
+            if (state.charts.line) state.charts.line.resize();
+          }, 100);
+        }
+      }
+      
+      static async handleSubmit() {
+        const distance = parseFloat(document.getElementById('distance').value);
+        const transport = document.getElementById('transport').value;
+        const passengers = parseInt(document.getElementById('passengers').value) || 1;
+        const roundtrip = document.getElementById('roundtrip').checked;
+        const fuel = document.getElementById('fuel').value;
+        const frequency = parseInt(document.getElementById('frequency').value) || 1;
+        
+        // Validação
+        if (!distance || distance <= 0) {
+          alert('Por favor, insira uma distância válida (maior que 0 km).');
+          return;
+        }
+        
+        if (!transport) {
+          alert('Por favor, selecione um modo de transporte.');
+          return;
+        }
+        
+        // Calcular emissões
+        const emission = Calculator.kmToKgCO2(distance, transport, passengers, roundtrip, fuel, frequency);
+        state.currentEmission = emission;
+        
+        // Mostrar resultado
+        const transportLabel = ECO_DATA.modes[transport].label;
+        UI.showResult(emission, distance, transportLabel, passengers, roundtrip);
+        
+        // Atualizar gráficos
+        UI.updateCharts(distance, transport, passengers, roundtrip, fuel, frequency);
+        
+        // Atualizar ranking
+        UI.updateRanking(distance, passengers, roundtrip, fuel, frequency);
+        
+        // Atualizar compensação
+        UI.updateCompensation(emission);
+        
+        // Gerar insight com IA
+        await AIService.generateInsight({
+          emission: emission.toFixed(2),
+          distance,
+          transport: transportLabel
+        });
+        
+        // Salvar no histórico
+        UI.saveToHistory({
+          id: Date.now(),
+          date: new Date().toLocaleString('pt-BR'),
+          distance,
+          transportKey: transport,
+          transport: transportLabel,
+          emission,
+          passengers,
+          roundtrip,
+          fuel,
+          frequency
+        });
+        
+        // Ir para tab de insights
+        UI.switchTab('insights');
+      }
+      
+      static showResult(emission, distance, transport, passengers, roundtrip) {
+        const resultHTML = `
+          <div class="result-display">
+            <h3 style="color: var(--muted); margin-bottom: 1rem;">Resultado da Simulação</h3>
+            <div class="result-value">${Calculator.formatKg(emission)}</div>
+            <p class="result-equivalent">
+              Para ${distance} km ${roundtrip ? '(ida e volta)' : '(somente ida)'}<br>
+              Usando ${transport} com ${passengers} passageiro(s)
+            </p>
+          </div>
+        `;
+        
+        // Adicionar resultado na tab de calculator
+        const calculatorResult = document.getElementById('calculator-result');
+        calculatorResult.innerHTML = resultHTML;
+      }
+      
+      static updateCharts(distance, transport, passengers, roundtrip, fuel, frequency) {
+        const ctxBar = document.getElementById('co2Chart')?.getContext('2d');
+        const ctxLine = document.getElementById('lineChart')?.getContext('2d');
+        
+        if (!ctxBar || !ctxLine) return;
+        
+        // Gráfico de barras (comparação entre modos)
+        const labels = [];
+        const data = [];
+        
+        Object.keys(ECO_DATA.modes).forEach(key => {
+          labels.push(ECO_DATA.modes[key].label);
+          data.push(Calculator.kmToKgCO2(distance, key, passengers, roundtrip, fuel, frequency));
+        });
+        
+        ChartManager.initBarChart(ctxBar, labels, data, ECO_DATA.modes[transport].label);
+        
+        // Gráfico de linha (evolução por distância)
+        const distances = [10, 25, 50, 100, 200, 500];
+        const emissions = distances.map(d => 
+          Calculator.kmToKgCO2(d, transport, passengers, roundtrip, fuel, frequency)
+        );
+        
+        ChartManager.initLineChart(ctxLine, distances, emissions);
+      }
+      
+      static updateRanking(distance, passengers, roundtrip, fuel, frequency) {
+        const rankingList = document.getElementById('rankingList');
+        if (!rankingList) return;
+        
+        const items = [];
+        
+        Object.keys(ECO_DATA.modes).forEach(key => {
+          const emission = Calculator.kmToKgCO2(distance, key, passengers, roundtrip, fuel, frequency);
+          items.push({
+            label: ECO_DATA.modes[key].label,
+            emission,
+            icon: ECO_DATA.modes[key].label.charAt(0)
+          });
+        });
+        
+        // Ordenar por menor emissão
+        items.sort((a, b) => a.emission - b.emission);
+        
+        rankingList.innerHTML = items.slice(0, 8).map((item, index) => `
+          <li class="ranking-item">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="ranking-badge">${index + 1}</span>
+              <span style="font-size: 1.2rem;">${item.icon}</span>
+              <span>${item.label.split(' ').slice(1).join(' ')}</span>
+            </div>
+            <span style="font-family: 'Roboto Mono', monospace; font-weight: 500;">
+              ${Calculator.formatKg(item.emission)}
+            </span>
+          </li>
+        `).join('');
+      }
+      
+      static updateCompensation(emission) {
+        const treesCount = document.getElementById('trees-count');
+        const solarCount = document.getElementById('solar-count');
+        
+        if (treesCount) {
+          treesCount.textContent = Calculator.toTrees(emission);
+        }
+        
+        if (solarCount) {
+          solarCount.textContent = Calculator.toSolarKwh(emission);
+        }
+      }
+      
+      static saveToHistory(entry) {
+        state.history.unshift(entry);
+        
+        // Limitar histórico
+        if (state.history.length > CONFIG.historyLimit) {
+          state.history = state.history.slice(0, CONFIG.historyLimit);
+        }
+        
+        StorageManager.saveHistory(state.history);
+        UI.renderHistory();
+      }
+      
+      static renderHistory() {
+        const historyList = document.getElementById('historyList');
+        if (!historyList) return;
+        
+        if (state.history.length === 0) {
+          historyList.innerHTML = `
+            <li class="history-item" style="text-align: center; color: var(--muted);">
+              Nenhum cálculo no histórico ainda. Faça sua primeira simulação!
+            </li>
+          `;
+          return;
+        }
+        
+        historyList.innerHTML = state.history.map(entry => `
+          <li class="history-item">
+            <div class="history-details">
+              <span class="history-transport">${entry.transport.split(' ').slice(0, 2).join(' ')}</span>
+              <span class="history-emission">${Calculator.formatKg(entry.emission)}</span>
+              <span class="history-date">${entry.date} • ${entry.distance} km</span>
+            </div>
+            <div class="history-actions">
+              <button onclick="UI.loadHistoryEntry(${entry.id})" title="Reutilizar">↻</button>
+              <button onclick="UI.deleteHistoryEntry(${entry.id})" title="Excluir">×</button>
+            </div>
+          </li>
+        `).join('');
+      }
+      
+      static loadHistoryEntry(id) {
+        const entry = state.history.find(item => item.id === id);
+        if (!entry) return;
+        
+        // Preencher formulário
+        document.getElementById('distance').value = entry.distance;
+        document.getElementById('passengers').value = entry.passengers;
+        document.getElementById('roundtrip').checked = entry.roundtrip;
+        document.getElementById('frequency').value = entry.frequency || 1;
+        document.getElementById('fuel').value = entry.fuel || 'default';
+        document.getElementById('transport').value = entry.transportKey;
+        
+        // Voltar para tab de calculator
+        UI.switchTab('calculator');
+        
+        // Mostrar mensagem
+        const calculatorResult = document.getElementById('calculator-result');
+        calculatorResult.innerHTML = `
+          <div class="result-display" style="background: rgba(59, 130, 246, 0.1);">
+            <p>📋 Dados carregados do histórico!</p>
+            <p style="font-size: 0.9rem; color: var(--muted);">
+              Ajuste os valores se necessário e clique em "Calcular Emissões".
+            </p>
+          </div>
+        `;
+      }
+      
+      static deleteHistoryEntry(id) {
+        if (confirm('Excluir este item do histórico?')) {
+          state.history = state.history.filter(item => item.id !== id);
+          StorageManager.saveHistory(state.history);
+          UI.renderHistory();
+        }
+      }
+      
+      static clearHistory() {
+        if (state.history.length === 0) {
+          alert('O histórico já está vazio.');
+          return;
+        }
+        
+        if (confirm('Tem certeza que deseja limpar todo o histórico? Esta ação não pode ser desfeita.')) {
+          state.history = [];
+          StorageManager.clearHistory();
+          UI.renderHistory();
+          alert('Histórico limpo com sucesso!');
+        }
+      }
+      
+      static exportData() {
+        const data = {
+          app: 'EcoTrip v2.0',
+          exportDate: new Date().toISOString(),
+          history: state.history,
+          currentEmission: state.currentEmission,
+          stats: {
+            totalCalculations: state.history.length,
+            totalCO2: state.history.reduce((sum, item) => sum + item.emission, 0).toFixed(2),
+            averageCO2: state.history.length > 0 ? 
+              (state.history.reduce((sum, item) => sum + item.emission, 0) / state.history.length).toFixed(2) : 0
+          }
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ecotrip-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('Dados exportados com sucesso! O arquivo foi baixado.');
+      }
+      
+      static resetAll() {
+        if (confirm('Resetar todos os dados e configurações? O histórico será perdido.')) {
+          // Resetar estado
+          state = {
+            currentEmission: 0,
+            history: [],
+            map: state.map,
+            markers: [],
+            charts: { bar: null, line: null },
+            mapDistance: 0
+          };
+          
+          // Limpar localStorage
+          StorageManager.clearHistory();
+          
+          // Limpar formulário
+          document.getElementById('trip-form').reset();
+          document.getElementById('calculator-result').innerHTML = '';
+          
+          // Limpar mapa
+          MapManager.clearRoute();
+          
+          // Resetar gráficos
+          if (state.charts.bar) {
+            state.charts.bar.destroy();
+            state.charts.bar = null;
+          }
+          if (state.charts.line) {
+            state.charts.line.destroy();
+            state.charts.line = null;
+          }
+          
+          // Resetar compensação
+          document.getElementById('trees-count').textContent = '0';
+          document.getElementById('solar-count').textContent = '0';
+          
+          // Resetar AI
+          document.getElementById('aiInsight').innerHTML = 
+            '<p class="ai-loading">Clique em "Calcular Emissões" para gerar uma análise...</p>';
+          
+          // Atualizar histórico
+          UI.renderHistory();
+          
+          // Voltar para tab inicial
+          UI.switchTab('calculator');
+          
+          alert('Aplicação resetada com sucesso!');
+        }
+      }
+    }
+
+    // ========== INICIALIZAÇÃO ==========
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        UI.init();
+        console.log('EcoTrip inicializado com sucesso!');
+      } catch (error) {
+        console.error('Erro ao inicializar EcoTrip:', error);
+        alert('Ocorreu um erro ao carregar a aplicação. Recarregue a página.');
+      }
+    });
+
+    // Expor funções globalmente para eventos onclick
+    window.UI = UI;
+  </script>
+</body>
+</html>
