@@ -45,7 +45,8 @@ EcoTrip é mais que uma calculadora de emissões — é uma plataforma educacion
 ### 📊 Visualização de Dados
 
 ```graph LR
-A[Dados Brutos] --> B[GráficoComparativo]                  A --> C[Evolução Temporal]
+A[Dados Brutos] --> B[GráficoComparativo]
+A --> C[Evolução Temporal]
 A --> D[Ranking Sustentável]
 B --> E[Insights Acionáveis]  
 C --> E                          
@@ -312,4 +313,5 @@ Tem dúvidas, sugestões ou quer colaborar?
 
 
 </div>
+
 
