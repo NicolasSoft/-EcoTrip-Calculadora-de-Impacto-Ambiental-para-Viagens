@@ -32,6 +32,11 @@ EcoTrip é mais que uma calculadora de emissões — é uma plataforma educacion
 
 </div>
 
+## Como acessar o Site ?
+
+* Copieou e cola e joga na barra de pesquisa:
+* (https://co2tracker.netlify.app/)
+
 ## 🎨 Destaques Visuais
 
 > "O que é medido pode ser gerenciado" — Peter Drucker
@@ -313,5 +318,6 @@ Tem dúvidas, sugestões ou quer colaborar?
 
 
 </div>
+
 
 
