@@ -34,7 +34,6 @@ EcoTrip é mais que uma calculadora de emissões — é uma plataforma educacion
 
 ## Como acessar o Site ?
 
-* Copieou e cola e joga na barra de pesquisa:
 * (https://co2tracker.netlify.app/)
 
 ## 🎨 Destaques Visuais
@@ -318,6 +317,7 @@ Tem dúvidas, sugestões ou quer colaborar?
 
 
 </div>
+
 
 
 
